@@ -6,26 +6,50 @@ using System.Net.Sockets;
 using static KSP.UI.UITransitionBase;
 using System.Runtime.Remoting.Messaging;
 using UnityEngine;
+using System.Collections.Generic;
+using System.Runtime.ConstrainedExecution;
+using System.Linq;
+using static TMPro.TMP_DefaultControls;
 
 namespace ksp2_data_emitter_plugin
 {
     public class TestPlugin : PartModule
     {
-        const String TAG = "---TESTPLUGIN---";
-        static TcpListener server = null; // the server, use static to avoid multiple servers
-        String http = null; // the recent data as ready formatted http message 
+        const string TAG = "---TESTPLUGIN---";
+        const int serverPort = 2025;
 
-        // start the server and wait for clients but async (automatically in own thread):
-        protected async void startServerAsync(int port)
+        static TcpListener server = null; // the server, use static to avoid multiple servers
+        string http = null; // the recent data as ready formatted http message 
+
+        //Editable Fields
+        [KSPField(guiActive = false, isPersistant = false)]
+        public string Propellants = "ElectricCharge, MonoPropellant, Liquid Fuel, Oxidizer";
+
+        //Creating Lists
+        public List<string> prop = new List<string>();
+
+        public Dictionary<string, object> values = new Dictionary<string, object>();
+
+        protected void stopServer()
         {
             if (server != null)
             {
-                print(TAG + " Close old Server " + port);
-                server.Stop();
+                print(TAG + " Stop Server");
+                try
+                {
+                    server.Stop();
+                }
+                catch (Exception) { }
                 server = null;
             }
-            print(TAG + " Start new Server " + port);
-            server = TcpListener.Create(port);
+        }
+
+        // start the server and wait for clients but async (automatically in own thread):
+        protected async void startServerAsync()
+        {
+            stopServer();
+            print(TAG + " Start new Server " + serverPort);
+            server = TcpListener.Create(serverPort);
             server.Start();
             while (true)
             {
@@ -67,28 +91,45 @@ namespace ksp2_data_emitter_plugin
             }
         }
 
+        public string jsonValue(string name, object value)
+        {
+            return "\"" + name + "\":" + (value.GetType() == typeof(string) ? ("\"" + value + "\"") : value.ToString());
+        }
+
         // get all new data and store it locally for faster access:
         public void updateData()
         {
-            // read all data, but handle errors:
-            double time = System.Math.Round(Planetarium.GetUniversalTime());
+            string json = "{\n";
+            bool jsonEmpty = true;
 
-            double altitude = 0;
-            try { altitude = vessel.altitude; }
-            catch (Exception) { altitude = 0; }
+            // clear old values:
+            values.Clear();
 
-            double srfSpeed = 0;
-            try { srfSpeed = vessel.srfSpeed; }
-            catch (Exception) { srfSpeed = 0; }
+            // fill global data:
+            values["time"] = System.Math.Round(Planetarium.GetUniversalTime());
 
-            var json =
-                "{"
-                + "\"time\":" + time + ", "
-                + "\"altitude\":" + altitude + ", "
-                + "\"srfSpeed\":" + srfSpeed
-                + "}"
-            ;
+            try { values["altitude"] = vessel.altitude; } catch (Exception) { }
 
+            // fill the propellant info:
+            char[] spearator = { ',', ';' };
+            prop = Propellants.Split(spearator, 2).ToList();
+            foreach (PartResource resource in part.Resources)
+            {
+                if (prop.Contains(resource.resourceName))
+                {
+                    try { values[resource.resourceName + "_amount"] = resource.amount; } catch (Exception) { }
+                    try { values[resource.resourceName + "_max"] = resource.maxAmount; } catch (Exception) { }
+                }
+            }
+
+            // fill all data into the json string:
+            foreach (KeyValuePair<string, object> v in values)
+            {
+                if (jsonEmpty) jsonEmpty = false; else json += ",\n";
+                json += " " + jsonValue(v.Key, v.Value);
+            }
+            json += "\n}";
+            print(json);
 
             http =
             "HTTP / 1.1 200 OK\r\n"
@@ -113,10 +154,27 @@ namespace ksp2_data_emitter_plugin
             base.OnStart(state);
             print(TAG + " OnStart " + state.ToString() + " state=" + ((int)state));
 
+            if ((state & StartState.Editor) != 0)
+            {
+                stopServer();
+            }
+            else
             if ((state & StartState.PreLaunch) != 0)
             {
-                startServerAsync(2025);
+                startServerAsync();
             }
+        }
+
+        public override void OnInactive()
+        {
+            base.OnInactive();
+            print(TAG + " OnInactive ");
+        }
+
+        public void OnDestroy()
+        {
+            print(TAG + " OnDestroy ");
+            stopServer();
         }
     }
 }
