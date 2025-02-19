@@ -1,16 +1,19 @@
-﻿using System;
+﻿using CommNet.Network;
+using Smooth.Algebraics;
+using System;
 using System.IO;
 using System.Net.Sockets;
+using static KSP.UI.UITransitionBase;
+using System.Runtime.Remoting.Messaging;
+using UnityEngine;
 
 namespace ksp2_data_emitter_plugin
 {
     public class TestPlugin : PartModule
     {
         const String TAG = "---TESTPLUGIN---";
-
         static TcpListener server = null; // the server, use static to avoid multiple servers
-        String message = null; // recent message
-        String http = null;
+        String http = null; // the recent data as ready formatted http message 
 
         // start the server and wait for clients but async (automatically in own thread):
         protected async void startServerAsync(int port)
@@ -24,7 +27,7 @@ namespace ksp2_data_emitter_plugin
             print(TAG + " Start new Server " + port);
             server = TcpListener.Create(port);
             server.Start();
-            while(true)
+            while (true)
             {
                 print(TAG + " [Server] waiting for new client...");
                 using (var tcpClient = await server.AcceptTcpClientAsync())
@@ -68,51 +71,41 @@ namespace ksp2_data_emitter_plugin
         public void updateData()
         {
             // read all data, but handle errors:
-            String time = Math.Round(Planetarium.GetUniversalTime()).ToString();
+            double time = System.Math.Round(Planetarium.GetUniversalTime());
 
-            String altitude = "-";
-            try { altitude = Math.Round(vessel.altitude).ToString(); }
-            catch (Exception) { altitude = "error"; }
+            double altitude = 0;
+            try { altitude = vessel.altitude; }
+            catch (Exception) { altitude = 0; }
 
-            String srfSpeed = "-";
-            try { srfSpeed = Math.Round(vessel.srfSpeed).ToString(); }
-            catch (Exception) { srfSpeed = "error"; }
+            double srfSpeed = 0;
+            try { srfSpeed = vessel.srfSpeed; }
+            catch (Exception) { srfSpeed = 0; }
 
-            String verticalSpeed = "-";
-            try { verticalSpeed = Math.Round(vessel.verticalSpeed).ToString(); }
-            catch (Exception) { verticalSpeed = "error"; }
-
-            String horizontalSrfSpeed = "-";
-            try { horizontalSrfSpeed = Math.Round(vessel.horizontalSrfSpeed).ToString(); }
-            catch (Exception) { horizontalSrfSpeed = "error"; }
-
-            const String delimiter = ";";
-            message =
-                "time:" + time + delimiter
-                + "alt:" + altitude + delimiter
-                + "srfspeed:" + srfSpeed + delimiter
-                + "verticalSpeed:" + verticalSpeed + delimiter
-                + "horizontalSrfSpeed:" + horizontalSrfSpeed + delimiter
+            var json =
+                "{"
+                + "\"time\":" + time + ", "
+                + "\"altitude\":" + altitude + ", "
+                + "\"srfSpeed\":" + srfSpeed
+                + "}"
             ;
 
 
             http =
-                "HTTP / 1.1 200 OK\r\n" +
-                "Content - Type: text / html\r\n" +
-                "Connection: close\r\n" +
-                "\r\n" +
-                "<!DOCTYPE html>" +
-                "<html>" +
-                "<head><meta http-equiv=\"refresh\" content=\"1\"></head>" +
-                "<body>" + message + "</body>" +
-                "</html>\r\n" +
-                "\r\n";
+            "HTTP / 1.1 200 OK\r\n"
+            + "Content-Type: application/json\r\n"
+                + "Access-Control-Allow-Origin: *\r\n"
+                + "Access-Control-Allow-Methods: POST, GET, OPTIONS\r\n"
+                + "Access-Control-Allow-Headers: X-PINGOTHER, Content-Type\r\n"
+                + "\r\n"
+                + json
+                + "\r\n"
+                + "\r\n";
         }
 
         public void FixedUpdate()
         {
             updateData();
-            // print(message);
+            // print(http);
         }
 
         public override void OnStart(StartState state)

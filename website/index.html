@@ -1,0 +1,53 @@
+<head>
+  <link rel="stylesheet" href="style.css">
+    <script>
+      function load_data() {
+        fetch(`http://127.0.0.1:2025/`)
+            .then(response => response.json())
+            .then(json_data => {
+                document.getElementById("a-data").innerHTML = `SPEED: ${Math.round(json_data.srfSpeed *3.6)} KM/H`;
+                document.getElementById("b-data").innerHTML = `ALTITUDE: ${Math.round(json_data.altitude / 1000)} KM`;
+                document.getElementById("c-data").innerHTML = `PITCH: ${Math.round(json_data.pitch / 1)}`;
+                document.getElementById("d-data").innerHTML = `ROLL: ${Math.round(json_data.d / 1)}`;
+                document.getElementById("f-data").innerHTML = `HEADING: ${Math.round(json_data.f / 1)}`;
+				var seconds = Math.floor(json_data.time);
+				var minutes = Math.floor(seconds / 60);
+				var hours = Math.round(minutes / 60);
+                document.getElementById("e-data").innerHTML = `T+${(hours < 10) ? ('0' + hours) : (hours)}:${(minutes%60 < 10) ? ('0' + minutes%60) : (minutes%60)}:${(seconds%60 < 10) ? ('0' + seconds%60) : (seconds%60)}`;
+                let element = document.getElementById("ship");
+                element.style.transform = `rotate(${json_data.c-90}deg)`;
+                let element1 = document.getElementById("booster");
+                element1.style.transform = `rotate(${json_data.c-90}deg)`;
+            })
+            .catch(error => console.error("Error fetching data:", error));
+      }
+      
+      window.onload = function() {
+        setInterval(load_data, 100);
+      };
+    </script>
+  </head>
+  <body style="background-color:rgba(0, 0, 0, 0.726);">
+    <div class="info">
+      <h1 id="e-data">T+00:08:01</h1>
+      <h2>STARSHIP FLIGHT TEST</h2>
+    </div>
+    <div class="shipinfo">
+      <p id="a-data">SPEED: 0 KM/H</p>
+      <p id="b-data">ALTITUDE: 0 KM</p>
+      <p id="c-data">PITCH: 0</p>
+      <p id="d-data">ROLL: 0</p>
+      <p id="f-data">HEADING: 0</p>
+    </div>
+    <div class="boosterinfo">
+      <p id="a-data">SPEED: 0 KM/H</p>
+      <p id="b-data">ALTITUDE: 0 KM</p>
+      <p id="c-data">PITCH: 0</p>
+      <p id="d-data">ROLL: 0</p>
+      <p id="f-data">HEADING: 0</p>
+    </div>
+    <img class="shipengines" src="ship_engines.svg"/>
+    <img class="boosterengines" src="booster_engines.svg"/>
+    <img class="ship" id="ship" src="Starship-Lines.png"/>
+    <img class="booster" id="booster" src="Booster-Lines.png"/>
+  </body>

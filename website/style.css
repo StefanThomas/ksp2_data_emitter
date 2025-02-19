@@ -1,0 +1,89 @@
+* {
+    margin: 5px;
+    padding: 0;
+}
+
+@font-face {
+    font-family: D-DIN-Bold;
+    src: url(\d-din\D-DIN-Bold.otf);
+  }
+
+.shipengines {
+    display: block;
+    margin-left:auto;
+    height: 170px;
+    width: 170px;
+    grid-area: shipengines;
+}
+
+.boosterengines {
+    display: flex;
+    height: 170px;
+    width: 170px;
+    justify-content: space-around;
+    grid-area: boosterengines;
+}
+
+.info {
+    align-content: center;
+    text-align: center;  
+    font-family: D-DIN-Bold, Arial, Verdana, sans-serif;
+    color: #ffffff;
+    grid-area: info;
+}
+
+.ship {
+    display: block;
+    align-content: center;
+    margin-left:auto;
+    margin-right: auto;
+    height: 170px;
+    grid-area: ship;
+}
+
+.booster {
+    display: block;
+    align-content: center;
+    margin-left:auto;
+    margin-right: auto;
+    height: 170px;
+    grid-area: booster;
+}
+
+h1 {
+    font-size: 46px;
+}
+h2 {
+    font-size: 20px;
+}
+
+.shipinfo {
+    align-content: center;
+    text-align: left;
+    font-family: D-DIN-Bold, Arial, Verdana, sans-serif;
+    font-weight: bold;
+    font-size: 24px;
+    color: #ffffff;
+    list-style-type: none;
+    grid-area: shipinfo;
+}
+
+.boosterinfo {
+    align-content: center;
+    text-align: left;
+    font-family: D-DIN-Bold, Arial, Verdana, sans-serif;
+    font-weight: bold;
+    font-size: 24px;
+    color: #ffffff52;
+    list-style-type: none;
+    grid-area: boosterinfo;
+}
+
+body {
+    display: grid;
+    grid-template-columns: 14.2857142857% 14.2857142857% 14.2857142857% 14.2857142857% 14.2857142857% 14.2857142857% 14.2857142857%;
+    grid-template-rows: auto;
+    grid-template-areas: 
+        "boosterengines boosterinfo booster info ship shipinfo shipengines"
+    ;
+}
